@@ -4,9 +4,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/textql.svg)](https://pypi.org/project/textql/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Official Python SDK for the [TextQL Platform API](https://docs.textql.com).
-
-> **Status:** v0.1.0 is a scaffolding release. Resource clients (`chat`, `playbooks`, `sandbox`, `connectors`) are stubs and not yet functional.
+Official Python SDK for the [TextQL Platform API](https://docs.textql.com/api-reference/v2/introduction).
 
 ## Installation
 
@@ -22,23 +20,64 @@ Requires Python 3.9+.
 from textql import TextQL
 
 client = TextQL(api_key="tql_...")  # or set TEXTQL_API_KEY in the environment
+
+# Ask a question
+response = client.chat.create("What was total revenue last quarter?", connector_ids=[1])
+print(response["response"])
+
+# Stream a response
+for event in client.chat.stream("Summarize sales by region"):
+    if event["type"] == "text":
+        print(event["text"], end="", flush=True)
+
+# Upload files with a question
+response = client.chat.create(
+    "Analyze this data",
+    files=["./sales.csv"],
+)
 ```
 
-Once resource clients land, the surface will look like:
+## Resources
+
+### Chat
 
 ```python
-# Simple chat
-response = client.chat.create(question="What was total revenue last quarter?")
+client.chat.list(limit=10)
+client.chat.create("What connectors are available?")
+client.chat.get("chat-uuid")
+client.chat.stream("Summarize revenue")
+client.chat.cancel("chat-uuid")
+```
 
-# Streaming
-for event in client.chat.stream(question="..."):
-    print(event.text, end="", flush=True)
+### Connectors
 
-# File upload
-response = client.chat.create(
-    question="Analyze this",
-    files=[{"path": "./sales.csv"}],
-)
+```python
+client.connectors.list()
+```
+
+### Playbooks
+
+```python
+client.playbooks.list(limit=10)
+pb = client.playbooks.create()
+client.playbooks.update(pb["id"], name="Weekly Revenue", prompt="Summarize revenue by region")
+client.playbooks.deploy(pb["id"])
+client.playbooks.run(pb["id"])
+client.playbooks.get(pb["id"])
+client.playbooks.delete(pb["id"])
+```
+
+### Sandbox
+
+```python
+sb = client.sandbox.start()
+sid = sb["sandbox_id"]
+
+client.sandbox.execute(sid, code="import pandas as pd; print(pd.__version__)")
+client.sandbox.query(sid, connector_id=1, query="SELECT * FROM sales LIMIT 10", dataframe_name="sales")
+client.sandbox.upload_file(sid, "./data.csv")
+client.sandbox.status(sid)
+client.sandbox.stop(sid)
 ```
 
 ## Configuration
@@ -46,21 +85,14 @@ response = client.chat.create(
 | Option | Env var | Default |
 |---|---|---|
 | `api_key` | `TEXTQL_API_KEY` | — (required) |
-| `base_url` | `TEXTQL_BASE_URL` | `https://api.textql.com` |
+| `base_url` | `TEXTQL_BASE_URL` | `https://app.textql.com` |
 | `timeout` | — | `60.0` seconds |
 
-## Development
-
-```bash
-pip install -e ".[dev]"
-ruff check . && ruff format --check .
-pyright
-pytest
-```
+The `base_url` accepts a bare hostname (e.g. `app.textql.com`) or a full URL.
 
 ## Links
 
-- [API documentation](https://docs.textql.com)
+- [API documentation](https://docs.textql.com/api-reference/v2/introduction)
 - [Changelog](CHANGELOG.md)
 - [Issues](https://github.com/TextQLLabs/textql-python/issues)
 
