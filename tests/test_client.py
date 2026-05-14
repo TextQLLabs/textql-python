@@ -32,6 +32,19 @@ def test_client_strips_trailing_slash_from_base_url() -> None:
     assert client.base_url == "https://example.com"
 
 
+def test_client_normalizes_bare_hostname() -> None:
+    client = TextQL(api_key="tql_x", base_url="staging.textql.com")
+    assert client.base_url == "https://staging.textql.com"
+
+
 def test_client_context_manager() -> None:
     with TextQL(api_key="tql_x") as client:
         assert client.api_key == "tql_x"
+
+
+def test_client_has_resource_clients() -> None:
+    client = TextQL(api_key="tql_x")
+    assert hasattr(client, "chat")
+    assert hasattr(client, "connectors")
+    assert hasattr(client, "playbooks")
+    assert hasattr(client, "sandbox")

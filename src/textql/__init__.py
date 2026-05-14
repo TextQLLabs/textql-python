@@ -9,6 +9,7 @@ from ._exceptions import (
     RateLimitError,
     TextQLError,
 )
+from ._streaming import Stream
 from ._version import __version__
 
 __all__ = [
@@ -19,6 +20,7 @@ __all__ = [
     "NotFoundError",
     "PermissionDeniedError",
     "RateLimitError",
+    "Stream",
     "TextQL",
     "TextQLError",
     "__version__",
