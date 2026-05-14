@@ -33,10 +33,10 @@ class Playbooks:
             params["sort_direction"] = sort_direction
         if status_filter is not None:
             params["status_filter"] = status_filter
-        return self._client._request("GET", "/v2/playbooks", params=params)
+        return self._client.request("GET", "/v2/playbooks", params=params)
 
     def create(self) -> Any:
-        return self._client._request("POST", "/v2/playbooks")
+        return self._client.request("POST", "/v2/playbooks")
 
     def get(
         self,
@@ -50,7 +50,7 @@ class Playbooks:
             params["limit"] = limit
         if offset is not None:
             params["offset"] = offset
-        return self._client._request("GET", f"/v2/playbooks/{playbook_id}", params=params)
+        return self._client.request("GET", f"/v2/playbooks/{playbook_id}", params=params)
 
     def update(
         self,
@@ -85,16 +85,16 @@ class Playbooks:
             body["tagged_slack_user_ids"] = tagged_slack_user_ids
         if selected_template_data_ids is not None:
             body["selected_template_data_ids"] = selected_template_data_ids
-        return self._client._request("PATCH", f"/v2/playbooks/{playbook_id}", json=body)
+        return self._client.request("PATCH", f"/v2/playbooks/{playbook_id}", json=body)
 
     def deploy(self, playbook_id: str) -> Any:
-        return self._client._request("POST", f"/v2/playbooks/{playbook_id}/deploy")
+        return self._client.request("POST", f"/v2/playbooks/{playbook_id}/deploy")
 
     def delete(self, playbook_id: str) -> Any:
-        return self._client._request("DELETE", f"/v2/playbooks/{playbook_id}")
+        return self._client.request("DELETE", f"/v2/playbooks/{playbook_id}")
 
     def run(self, playbook_id: str, *, dry_run: bool = False) -> Any:
         body: dict[str, Any] = {}
         if dry_run:
             body["dry_run"] = True
-        return self._client._request("POST", f"/v2/playbooks/{playbook_id}/run", json=body)
+        return self._client.request("POST", f"/v2/playbooks/{playbook_id}/run", json=body)

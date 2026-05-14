@@ -11,4 +11,4 @@ class Connectors:
         self._client = client
 
     def list(self) -> Any:
-        return self._client._request("GET", "/v2/connectors")
+        return self._client.request("GET", "/v2/connectors")

@@ -34,7 +34,7 @@ class Chat:
             params["sort_by"] = sort_by
         if sort_direction is not None:
             params["sort_direction"] = sort_direction
-        return self._client._request("GET", "/v2/chats", params=params)
+        return self._client.request("GET", "/v2/chats", params=params)
 
     def create(
         self,
@@ -56,7 +56,7 @@ class Chat:
             body["connector_ids"] = connector_ids
         if tools is not None:
             body["tools"] = tools
-        return self._client._request("POST", "/v2/chats", json=body)
+        return self._client.request("POST", "/v2/chats", json=body)
 
     def _create_multipart(
         self,
@@ -81,10 +81,10 @@ class Chat:
                 p = Path(f)
                 file_tuples.append(("files", (p.name, p.read_bytes())))
 
-        return self._client._request("POST", "/v2/chats", data=fields, files=file_tuples)
+        return self._client.request("POST", "/v2/chats", data=fields, files=file_tuples)
 
     def get(self, chat_id: str) -> Any:
-        return self._client._request("GET", f"/v2/chats/{chat_id}")
+        return self._client.request("GET", f"/v2/chats/{chat_id}")
 
     def stream(
         self,
@@ -101,7 +101,7 @@ class Chat:
             body["connector_ids"] = connector_ids
         if tools is not None:
             body["tools"] = tools
-        return self._client._stream_request("POST", "/v2/chats/stream", json=body)
+        return self._client.stream_request("POST", "/v2/chats/stream", json=body)
 
     def cancel(self, chat_id: str) -> Any:
-        return self._client._request("POST", f"/v2/chats/{chat_id}/cancel")
+        return self._client.request("POST", f"/v2/chats/{chat_id}/cancel")

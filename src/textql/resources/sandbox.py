@@ -14,16 +14,16 @@ class Sandbox:
         self._client = client
 
     def start(self) -> Any:
-        return self._client._request("POST", "/v2/sandboxes")
+        return self._client.request("POST", "/v2/sandboxes")
 
     def status(self, sandbox_id: str) -> Any:
-        return self._client._request("GET", f"/v2/sandboxes/{sandbox_id}")
+        return self._client.request("GET", f"/v2/sandboxes/{sandbox_id}")
 
     def stop(self, sandbox_id: str) -> Any:
-        return self._client._request("DELETE", f"/v2/sandboxes/{sandbox_id}")
+        return self._client.request("DELETE", f"/v2/sandboxes/{sandbox_id}")
 
     def execute(self, sandbox_id: str, *, code: str) -> Any:
-        return self._client._request(
+        return self._client.request(
             "POST", f"/v2/sandboxes/{sandbox_id}/execute", json={"code": code}
         )
 
@@ -38,7 +38,7 @@ class Sandbox:
         body: dict[str, Any] = {"connector_id": connector_id, "query": query}
         if dataframe_name is not None:
             body["dataframe_name"] = dataframe_name
-        return self._client._request("POST", f"/v2/sandboxes/{sandbox_id}/query", json=body)
+        return self._client.request("POST", f"/v2/sandboxes/{sandbox_id}/query", json=body)
 
     def upload_file(self, sandbox_id: str, file: FileInput) -> Any:
         if isinstance(file, tuple):
@@ -47,7 +47,7 @@ class Sandbox:
             p = Path(file)
             name = p.name
             content = p.read_bytes()
-        return self._client._request(
+        return self._client.request(
             "POST",
             f"/v2/sandboxes/{sandbox_id}/files",
             files=[("file", (name, content))],

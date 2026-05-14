@@ -70,7 +70,7 @@ class TextQL:
             "Accept": "application/json",
         }
 
-    def _request(self, method: str, path: str, **kwargs: Any) -> Any:
+    def request(self, method: str, path: str, **kwargs: Any) -> Any:
         try:
             resp = self._http.request(method, path, **kwargs)
         except httpx.TimeoutException as e:
@@ -85,7 +85,7 @@ class TextQL:
             return None
         return resp.json()
 
-    def _stream_request(self, method: str, path: str, **kwargs: Any) -> Stream:
+    def stream_request(self, method: str, path: str, **kwargs: Any) -> Stream:
         try:
             req = self._http.build_request(method, path, **kwargs)
             resp = self._http.send(req, stream=True)
@@ -105,12 +105,14 @@ class TextQL:
         message = response.text
         request_id: str | None = None
         try:
-            body = response.json()
-            if isinstance(body, dict):
-                error = body.get("error")
-                if isinstance(error, dict):
-                    message = error.get("message", message)
-                    request_id = error.get("request")
+            body: dict[str, Any] = response.json()
+            error: dict[str, Any] = body.get("error", {})
+            msg: Any = error.get("message")
+            if isinstance(msg, str):
+                message = msg
+            rid: Any = error.get("request")
+            if isinstance(rid, str):
+                request_id = rid
         except Exception:
             pass
 
