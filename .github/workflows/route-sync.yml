@@ -4,13 +4,14 @@ name: Route Sync
 # vendored copy; that PR fails test_route_coverage until the matching SDK
 # methods + `# v2:covers` comments are added.
 #
-# Auth: a GitHub App is the single credential for both halves — it reads the
-# private backend repo's manifest AND opens a PR here that triggers CI (PRs from
-# the default GITHUB_TOKEN do not run checks). Configure:
-#   - var SYNC_APP_ID, secret SYNC_APP_PRIVATE_KEY
-#   - install the App on the backend repo (Contents: read) and on this repo
-#     (Contents: read/write, Pull requests: read/write)
-# Until configured the job no-ops.
+# Needs a cross-repo credential (the default GITHUB_TOKEN can't read the private
+# backend repo, and PRs it opens don't trigger CI). Use EITHER:
+#   - a fine-grained PAT (owner TextQLLabs, repos demo2 + textql-python,
+#     Contents: read/write, Pull requests: read/write) as secret
+#     BACKEND_REPO_TOKEN; or
+#   - a GitHub App (var SYNC_APP_ID + secret SYNC_APP_PRIVATE_KEY) installed on
+#     both repos with the same permissions.
+# The App is preferred (no expiry); the job no-ops until one is configured.
 
 on:
   schedule:
@@ -39,27 +40,33 @@ jobs:
           repositories: |
             ${{ vars.BACKEND_REPO_NAME || 'demo2' }}
             ${{ github.event.repository.name }}
+      - name: Resolve token
+        id: token
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          PAT: ${{ secrets.BACKEND_REPO_TOKEN }}
+        run: |
+          tok="${APP_TOKEN:-$PAT}"
+          if [ -z "$tok" ]; then echo "has_token=false" >> "$GITHUB_OUTPUT"; else echo "has_token=true" >> "$GITHUB_OUTPUT"; fi
+          echo "::add-mask::$tok"
+          echo "value=$tok" >> "$GITHUB_OUTPUT"
       - name: Fetch upstream manifest
         id: fetch
+        if: ${{ steps.token.outputs.has_token == 'true' }}
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.token.outputs.value }}
         run: |
           set -euo pipefail
-          if [ -z "${GH_TOKEN:-}" ]; then
-            echo "GitHub App not configured (set SYNC_APP_ID + SYNC_APP_PRIVATE_KEY); skipping"
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
           gh api "repos/${{ github.repository_owner }}/${BACKEND_REPO_NAME}/contents/${MANIFEST_PATH}?ref=${MANIFEST_REF}" \
             -H "Accept: application/vnd.github.raw" > upstream.json
           changed=$(python3 -c "import json; a=set(json.load(open('upstream.json'))); b=set(json.load(open('tests/routes.manifest.json'))); print('true' if a!=b else 'false')")
           if [ "$changed" = "true" ]; then cp upstream.json tests/routes.manifest.json; fi
           echo "changed=$changed" >> "$GITHUB_OUTPUT"
       - name: Open PR
-        if: steps.fetch.outputs.changed == 'true'
+        if: ${{ steps.fetch.outputs.changed == 'true' }}
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ steps.token.outputs.value }}
           branch: route-sync
           add-paths: tests/routes.manifest.json
           commit-message: "chore: sync v2 route manifest from backend"
