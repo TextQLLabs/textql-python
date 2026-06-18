@@ -10,6 +10,7 @@ class Playbooks:
     def __init__(self, client: TextQL) -> None:
         self._client = client
 
+    # v2:covers GET /v2/playbooks
     def list(
         self,
         *,
@@ -35,9 +36,11 @@ class Playbooks:
             params["status_filter"] = status_filter
         return self._client.request("GET", "/v2/playbooks", params=params)
 
+    # v2:covers POST /v2/playbooks
     def create(self) -> Any:
         return self._client.request("POST", "/v2/playbooks")
 
+    # v2:covers GET /v2/playbooks/:id
     def get(
         self,
         playbook_id: str,
@@ -52,6 +55,7 @@ class Playbooks:
             params["offset"] = offset
         return self._client.request("GET", f"/v2/playbooks/{playbook_id}", params=params)
 
+    # v2:covers PATCH /v2/playbooks/:id
     def update(
         self,
         playbook_id: str,
@@ -87,12 +91,15 @@ class Playbooks:
             body["selected_template_data_ids"] = selected_template_data_ids
         return self._client.request("PATCH", f"/v2/playbooks/{playbook_id}", json=body)
 
+    # v2:covers POST /v2/playbooks/:id/deploy
     def deploy(self, playbook_id: str) -> Any:
         return self._client.request("POST", f"/v2/playbooks/{playbook_id}/deploy")
 
+    # v2:covers DELETE /v2/playbooks/:id
     def delete(self, playbook_id: str) -> Any:
         return self._client.request("DELETE", f"/v2/playbooks/{playbook_id}")
 
+    # v2:covers POST /v2/playbooks/:id/run
     def run(self, playbook_id: str, *, dry_run: bool = False) -> Any:
         body: dict[str, Any] = {}
         if dry_run:

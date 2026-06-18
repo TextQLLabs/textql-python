@@ -5,6 +5,23 @@ All notable changes to the `textql` Python SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] — 2026-06-18
+
+### Fixed
+- Sandbox resource now targets `/v2/sandcastles`; the backend renamed the path from `/v2/sandboxes` with no alias, so every sandbox call was 404ing.
+
+### Added
+- Sandbox: `list` and `executions` (both cursor-paginated), and an optional `sandbox_id` on `start` to restart a specific sandbox.
+- Sandbox `query`: `tql_path` (run a saved library `.tql`), `params`, and `max_rows`; enforces exactly one of `query`/`tql_path` client-side.
+- Connectors: `types`, `create`, `test`, `update`, `delete` — `config` is passed through as proto-JSON; call `connectors.types()` for per-type fields.
+- Route-drift guard: `tests/test_route_coverage.py` + vendored `tests/routes.manifest.json`, and a scheduled `route-sync` workflow that opens a PR when the backend route set changes.
+
+## [2.0.0] — 2026-05-14
+
+### Changed
+- Version realigned to 2.x to track the v2 Platform API surface.
+- Releases publish to PyPI via Trusted Publishing.
+
 ## [0.2.0] — 2026-05-14
 
 ### Added
