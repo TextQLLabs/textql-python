@@ -1,10 +1,11 @@
 name: Route Sync
 
-# Pulls the canonical v2 route manifest from the backend and opens a PR when it
-# drifts from the vendored copy. The PR then fails test_route_coverage until the
-# matching SDK methods + `# v2:covers` comments are added. Configure the repo
-# variable BACKEND_MANIFEST_URL (raw URL of compute/pkg/platform/v2/routes.manifest.json)
-# and, if the source is private, the BACKEND_REPO_TOKEN secret.
+# Opens a PR when the backend's canonical v2 route manifest drifts from the
+# vendored copy; the PR then fails test_route_coverage until the matching SDK
+# methods + `# v2:covers` comments are added. demo2 is private, so fetching its
+# manifest needs a token with Contents:read on it — store it as the
+# BACKEND_REPO_TOKEN secret (fine-grained PAT scoped to demo2, or a GitHub App
+# installation token).
 
 on:
   schedule:
@@ -18,31 +19,34 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.BACKEND_REPO_TOKEN }}
+      BACKEND_REPO: ${{ vars.BACKEND_REPO || 'TextQLLabs/demo2' }}
+      MANIFEST_PATH: ${{ vars.BACKEND_MANIFEST_PATH || 'compute/pkg/platform/v2/routes.manifest.json' }}
+      MANIFEST_REF: ${{ vars.BACKEND_MANIFEST_REF || 'main' }}
     steps:
       - uses: actions/checkout@v4
       - name: Fetch upstream manifest
         id: fetch
-        env:
-          BACKEND_MANIFEST_URL: ${{ vars.BACKEND_MANIFEST_URL }}
-          BACKEND_REPO_TOKEN: ${{ secrets.BACKEND_REPO_TOKEN }}
         run: |
-          if [ -z "$BACKEND_MANIFEST_URL" ]; then
-            echo "BACKEND_MANIFEST_URL not set; skipping"
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "BACKEND_REPO_TOKEN not set; skipping"
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          auth=()
-          if [ -n "$BACKEND_REPO_TOKEN" ]; then auth=(-H "Authorization: Bearer $BACKEND_REPO_TOKEN"); fi
-          curl -fsSL "${auth[@]}" "$BACKEND_MANIFEST_URL" -o upstream.json
-          changed=$(python -c "import json,sys; a=set(json.load(open('upstream.json'))); b=set(json.load(open('tests/routes.manifest.json'))); print('true' if a!=b else 'false')")
-          if [ "$changed" = "true" ]; then
-            python -c "import json; json.dump(sorted(json.load(open('upstream.json'))), open('tests/routes.manifest.json','w'), indent=2); open('tests/routes.manifest.json','a').write('\n')"
-          fi
+          gh api "repos/${BACKEND_REPO}/contents/${MANIFEST_PATH}?ref=${MANIFEST_REF}" \
+            -H "Accept: application/vnd.github.raw" > upstream.json
+          changed=$(python3 -c "import json; a=set(json.load(open('upstream.json'))); b=set(json.load(open('tests/routes.manifest.json'))); print('true' if a!=b else 'false')")
+          if [ "$changed" = "true" ]; then cp upstream.json tests/routes.manifest.json; fi
           echo "changed=$changed" >> "$GITHUB_OUTPUT"
       - name: Open PR
         if: steps.fetch.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
+          # Default GITHUB_TOKEN-created PRs do NOT trigger CI; pass a PAT/App
+          # token here if you want test_route_coverage to run automatically.
+          token: ${{ secrets.ROUTE_SYNC_PR_TOKEN || secrets.GITHUB_TOKEN }}
           branch: route-sync
           add-paths: tests/routes.manifest.json
           commit-message: "chore: sync v2 route manifest from backend"
