@@ -27,7 +27,10 @@ jobs:
     env:
       BACKEND_REPO_NAME: ${{ vars.BACKEND_REPO_NAME || 'demo2' }}
       MANIFEST_PATH: ${{ vars.BACKEND_MANIFEST_PATH || 'compute/pkg/platform/v2/routes.manifest.json' }}
-      MANIFEST_REF: ${{ vars.BACKEND_MANIFEST_REF || 'main' }}
+      # Track the PROD contract: the SDK defaults to app.textql.com, and demo2's
+      # `main` is staging — prod is the `release` branch. Tracking `main` would
+      # sync the SDK ahead of what prod serves.
+      MANIFEST_REF: ${{ vars.BACKEND_MANIFEST_REF || 'release' }}
     steps:
       - uses: actions/checkout@v4
       - name: Mint App token
@@ -57,8 +60,16 @@ jobs:
           GH_TOKEN: ${{ steps.token.outputs.value }}
         run: |
           set -euo pipefail
-          gh api "repos/${{ github.repository_owner }}/${BACKEND_REPO_NAME}/contents/${MANIFEST_PATH}?ref=${MANIFEST_REF}" \
-            -H "Accept: application/vnd.github.raw" > upstream.json
+          if ! gh api "repos/${{ github.repository_owner }}/${BACKEND_REPO_NAME}/contents/${MANIFEST_PATH}?ref=${MANIFEST_REF}" \
+                -H "Accept: application/vnd.github.raw" > upstream.json 2> fetch_err; then
+            if grep -qi "not found" fetch_err; then
+              echo "manifest not on '${MANIFEST_REF}' yet (or path moved); skipping"
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            cat fetch_err >&2
+            exit 1
+          fi
           changed=$(python3 -c "import json; a=set(json.load(open('upstream.json'))); b=set(json.load(open('tests/routes.manifest.json'))); print('true' if a!=b else 'false')")
           if [ "$changed" = "true" ]; then cp upstream.json tests/routes.manifest.json; fi
           echo "changed=$changed" >> "$GITHUB_OUTPUT"
