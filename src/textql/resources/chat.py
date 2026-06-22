@@ -14,6 +14,7 @@ class Chat:
     def __init__(self, client: TextQL) -> None:
         self._client = client
 
+    # v2:covers GET /v2/chats
     def list(
         self,
         *,
@@ -36,6 +37,7 @@ class Chat:
             params["sort_direction"] = sort_direction
         return self._client.request("GET", "/v2/chats", params=params)
 
+    # v2:covers POST /v2/chats
     def create(
         self,
         question: str,
@@ -83,9 +85,11 @@ class Chat:
 
         return self._client.request("POST", "/v2/chats", data=fields, files=file_tuples)
 
+    # v2:covers GET /v2/chats/:id
     def get(self, chat_id: str) -> Any:
         return self._client.request("GET", f"/v2/chats/{chat_id}")
 
+    # v2:covers POST /v2/chats/stream
     def stream(
         self,
         question: str,
@@ -103,5 +107,6 @@ class Chat:
             body["tools"] = tools
         return self._client.stream_request("POST", "/v2/chats/stream", json=body)
 
+    # v2:covers POST /v2/chats/:id/cancel
     def cancel(self, chat_id: str) -> Any:
         return self._client.request("POST", f"/v2/chats/{chat_id}/cancel")

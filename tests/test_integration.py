@@ -36,6 +36,11 @@ class TestConnectors:
         assert "name" in first
         assert "type" in first
 
+    def test_types(self, client):
+        result = client.connectors.types()
+        assert "types" in result
+        assert isinstance(result["types"], list)
+
 
 class TestChat:
     def test_list(self, client):
@@ -125,6 +130,11 @@ class TestSandbox:
             st = client.sandbox.status(sb_id)
             assert st["status"] in ("running", "stopped")
 
+            # list (the running sandbox should appear)
+            listed = client.sandbox.list()
+            assert "sandboxes" in listed
+            assert any(s["sandbox_id"] == sb_id for s in listed["sandboxes"])
+
             # execute
             result = client.sandbox.execute(sb_id, code="print(2 + 2)")
             assert result["output"] == ["4"]
@@ -147,6 +157,11 @@ class TestSandbox:
                 )
                 assert qr["dataframe_name"] == "test_df"
                 assert qr["num_rows"] >= 1
+
+            # executions (the runs above should be recorded)
+            execs = client.sandbox.executions(sb_id)
+            assert "executions" in execs
+            assert isinstance(execs["executions"], list)
         finally:
             # stop (cleanup)
             stopped = client.sandbox.stop(sb_id)
