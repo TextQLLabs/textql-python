@@ -135,9 +135,7 @@ class Sandbox:
     # v2:covers GET /v2/sandcastles/:id/files/*
     def download_file(self, sandbox_id: str, file_path: str) -> bytes:
         rel = file_path.lstrip("/")
-        return self._client.request(
-            "GET", f"/v2/sandcastles/{sandbox_id}/files/{rel}", raw=True
-        )
+        return self._client.request("GET", f"/v2/sandcastles/{sandbox_id}/files/{rel}", raw=True)
 
     # v2:covers DELETE /v2/sandcastles/:id/files/*
     def delete_file(self, sandbox_id: str, file_path: str) -> Any:
