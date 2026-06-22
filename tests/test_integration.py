@@ -42,6 +42,13 @@ class TestConnectors:
         assert isinstance(result["types"], list)
 
 
+class TestModels:
+    def test_list(self, client):
+        result = client.models.list()
+        assert "models" in result
+        assert isinstance(result["models"], list)
+
+
 class TestChat:
     def test_list(self, client):
         result = client.chat.list(limit=2)
@@ -135,6 +142,11 @@ class TestSandbox:
             assert "sandboxes" in listed
             assert any(s["sandbox_id"] == sb_id for s in listed["sandboxes"])
 
+            # exec (bash)
+            ex = client.sandbox.exec(sb_id, command="echo hi")
+            assert ex["stdout"].strip() == "hi"
+            assert ex["exit_code"] == 0
+
             # execute
             result = client.sandbox.execute(sb_id, code="print(2 + 2)")
             assert result["output"] == ["4"]
@@ -162,6 +174,12 @@ class TestSandbox:
             execs = client.sandbox.executions(sb_id)
             assert "executions" in execs
             assert isinstance(execs["executions"], list)
+
+            # files + library diff (read-only)
+            files = client.sandbox.list_files(sb_id)
+            assert "files" in files
+            diff = client.sandbox.library_diff(sb_id)
+            assert "has_changes" in diff
         finally:
             # stop (cleanup)
             stopped = client.sandbox.stop(sb_id)

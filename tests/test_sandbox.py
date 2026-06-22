@@ -126,3 +126,74 @@ def test_query_requires_exactly_one_of() -> None:
         c.sandbox.query("sb1", connector_id=2)
     with pytest.raises(ValueError, match="exactly one of query or tql_path"):
         c.sandbox.query("sb1", connector_id=2, query="x", tql_path="y")
+
+
+@respx.mock
+def test_exec_path_and_body() -> None:
+    route = respx.post(f"{BASE}/v2/sandcastles/sb1/exec").mock(
+        return_value=httpx.Response(200, json={"stdout": "hi\n", "exit_code": 0})
+    )
+    _client().sandbox.exec("sb1", command="echo hi", kind="bash", env={"X": "1"})
+    assert json.loads(route.calls.last.request.content) == {
+        "command": "echo hi",
+        "kind": "bash",
+        "env": {"X": "1"},
+    }
+
+
+@respx.mock
+def test_list_files_path_and_params() -> None:
+    route = respx.get(f"{BASE}/v2/sandcastles/sb1/files").mock(
+        return_value=httpx.Response(200, json={"files": []})
+    )
+    _client().sandbox.list_files("sb1", path="sub")
+    assert dict(route.calls.last.request.url.params) == {"path": "sub"}
+
+
+@respx.mock
+def test_download_file_returns_raw_bytes() -> None:
+    respx.get(f"{BASE}/v2/sandcastles/sb1/files/out/data.csv").mock(
+        return_value=httpx.Response(200, content=b"a,b\n1,2\n")
+    )
+    out = _client().sandbox.download_file("sb1", "out/data.csv")
+    assert out == b"a,b\n1,2\n"
+
+
+@respx.mock
+def test_download_file_strips_leading_slash() -> None:
+    route = respx.get(f"{BASE}/v2/sandcastles/sb1/files/x.txt").mock(
+        return_value=httpx.Response(200, content=b"x")
+    )
+    _client().sandbox.download_file("sb1", "/x.txt")
+    assert route.calls.last.request.url.path == "/v2/sandcastles/sb1/files/x.txt"
+
+
+@respx.mock
+def test_delete_file_path() -> None:
+    route = respx.delete(f"{BASE}/v2/sandcastles/sb1/files/x.txt").mock(
+        return_value=httpx.Response(200, json={"success": True})
+    )
+    _client().sandbox.delete_file("sb1", "x.txt")
+    assert route.called
+
+
+@respx.mock
+def test_library_diff_path() -> None:
+    route = respx.get(f"{BASE}/v2/sandcastles/sb1/library/diff").mock(
+        return_value=httpx.Response(200, json={"has_changes": False})
+    )
+    _client().sandbox.library_diff("sb1")
+    assert route.called
+
+
+@respx.mock
+def test_create_library_patch_body() -> None:
+    route = respx.post(f"{BASE}/v2/sandcastles/sb1/library/patches").mock(
+        return_value=httpx.Response(201, json={"patch_id": "p1"})
+    )
+    _client().sandbox.create_library_patch("sb1", title="t", description="d", draft=True)
+    assert json.loads(route.calls.last.request.content) == {
+        "title": "t",
+        "description": "d",
+        "draft": True,
+    }
