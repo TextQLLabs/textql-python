@@ -5,7 +5,7 @@ All notable changes to the `textql` Python SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0] — 2026-06-18
+## [2.1.0] — 2026-06-22
 
 ### Fixed
 - Sandbox resource now targets `/v2/sandcastles`; the backend renamed the path from `/v2/sandboxes` with no alias, so every sandbox call was 404ing.
@@ -13,8 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Sandbox: `list` and `executions` (both cursor-paginated), and an optional `sandbox_id` on `start` to restart a specific sandbox.
 - Sandbox `query`: `tql_path` (run a saved library `.tql`), `params`, and `max_rows`; enforces exactly one of `query`/`tql_path` client-side.
+- Sandbox: `exec` (bash/python command → stdout/stderr/exit_code), `list_files`, `download_file` (raw bytes), `delete_file`, `library_diff`, and `create_library_patch`.
+- Models resource: `list` (`GET /v2/models`) — the models a key may pass as the chat `model` field.
 - Connectors: `types`, `create`, `test`, `update`, `delete` — `config` is passed through as proto-JSON; call `connectors.types()` for per-type fields.
-- Route-drift guard: `tests/test_route_coverage.py` + vendored `tests/routes.manifest.json`, and a scheduled `route-sync` workflow that opens a PR when the backend route set changes.
+- Route-drift guard: `tests/test_route_coverage.py` + vendored `tests/routes.manifest.json` (33 routes), and a scheduled `route-sync` workflow that opens a PR when the backend route set changes.
 
 ## [2.0.0] — 2026-05-14
 

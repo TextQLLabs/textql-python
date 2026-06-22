@@ -18,6 +18,7 @@ from ._streaming import Stream
 from ._version import __version__
 from .resources.chat import Chat
 from .resources.connectors import Connectors
+from .resources.models import Models
 from .resources.playbooks import Playbooks
 from .resources.sandbox import Sandbox
 
@@ -30,6 +31,7 @@ class TextQL:
 
     chat: Chat
     connectors: Connectors
+    models: Models
     playbooks: Playbooks
     sandbox: Sandbox
 
@@ -60,6 +62,7 @@ class TextQL:
 
         self.chat = Chat(self)
         self.connectors = Connectors(self)
+        self.models = Models(self)
         self.playbooks = Playbooks(self)
         self.sandbox = Sandbox(self)
 
@@ -70,7 +73,7 @@ class TextQL:
             "Accept": "application/json",
         }
 
-    def request(self, method: str, path: str, **kwargs: Any) -> Any:
+    def request(self, method: str, path: str, *, raw: bool = False, **kwargs: Any) -> Any:
         try:
             resp = self._http.request(method, path, **kwargs)
         except httpx.TimeoutException as e:
@@ -81,6 +84,8 @@ class TextQL:
         if resp.status_code >= 400:
             self._raise_for_status(resp)
 
+        if raw:
+            return resp.content
         if not resp.content:
             return None
         return resp.json()

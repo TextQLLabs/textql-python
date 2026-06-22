@@ -108,3 +108,63 @@ class Sandbox:
             f"/v2/sandcastles/{sandbox_id}/files",
             files=[("file", (name, content))],
         )
+
+    # v2:covers POST /v2/sandcastles/:id/exec
+    def exec(
+        self,
+        sandbox_id: str,
+        *,
+        command: str,
+        kind: str | None = None,
+        env: dict[str, str] | None = None,
+    ) -> Any:
+        body: dict[str, Any] = {"command": command}
+        if kind is not None:
+            body["kind"] = kind
+        if env is not None:
+            body["env"] = env
+        return self._client.request("POST", f"/v2/sandcastles/{sandbox_id}/exec", json=body)
+
+    # v2:covers GET /v2/sandcastles/:id/files
+    def list_files(self, sandbox_id: str, *, path: str | None = None) -> Any:
+        params: dict[str, Any] = {}
+        if path is not None:
+            params["path"] = path
+        return self._client.request("GET", f"/v2/sandcastles/{sandbox_id}/files", params=params)
+
+    # v2:covers GET /v2/sandcastles/:id/files/*
+    def download_file(self, sandbox_id: str, file_path: str) -> bytes:
+        rel = file_path.lstrip("/")
+        return self._client.request("GET", f"/v2/sandcastles/{sandbox_id}/files/{rel}", raw=True)
+
+    # v2:covers DELETE /v2/sandcastles/:id/files/*
+    def delete_file(self, sandbox_id: str, file_path: str) -> Any:
+        rel = file_path.lstrip("/")
+        return self._client.request("DELETE", f"/v2/sandcastles/{sandbox_id}/files/{rel}")
+
+    # v2:covers GET /v2/sandcastles/:id/library/diff
+    def library_diff(self, sandbox_id: str) -> Any:
+        return self._client.request("GET", f"/v2/sandcastles/{sandbox_id}/library/diff")
+
+    # v2:covers POST /v2/sandcastles/:id/library/patches
+    def create_library_patch(
+        self,
+        sandbox_id: str,
+        *,
+        title: str | None = None,
+        description: str | None = None,
+        draft: bool | None = None,
+        patch_number: int | None = None,
+    ) -> Any:
+        body: dict[str, Any] = {}
+        if title is not None:
+            body["title"] = title
+        if description is not None:
+            body["description"] = description
+        if draft is not None:
+            body["draft"] = draft
+        if patch_number is not None:
+            body["patch_number"] = patch_number
+        return self._client.request(
+            "POST", f"/v2/sandcastles/{sandbox_id}/library/patches", json=body
+        )
